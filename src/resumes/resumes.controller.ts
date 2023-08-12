@@ -38,8 +38,8 @@ export class ResumesController {
     return this.resumesService.update(id, status, user);
   }
 
-  @ResponseMessage("Delete resume")
   @Delete(':id')
+  @ResponseMessage("Delete resume")
   remove(@Param('id') id: string, @User() user: IUser) {
     return this.resumesService.remove(id, user);
   }
