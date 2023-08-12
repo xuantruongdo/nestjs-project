@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserDocument, User as UserM } from './schemas/user.schema';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { compareSync, genSaltSync, hashSync } from 'bcryptjs';
+import { User } from 'src/decorator/customize';
+import { IUser } from './users.interface';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +31,7 @@ export class UsersService {
     return user;
   }
 
-  findAll() {
+  findAll(user: IUser) {
     return `This action returns all users`;
   }
 
@@ -45,6 +47,27 @@ export class UsersService {
     return compareSync(password, hash);
   }
 
+  async register (user: RegisterUserDto) {
+    const { email, password, fullname } = user;
+
+    const isExist = await this.userModel.findOne({ email })
+    
+    if (isExist) {
+      throw new BadRequestException("Email đã tồn tại")
+    }
+
+
+    const hashPassword = this.getHashPassword(password);
+
+    let newRegister = await this.userModel.create({
+      email,
+      password: hashPassword,
+      fullname
+    })
+
+    return newRegister;
+  }
+
 
 
   update(id: number, updateUserDto: UpdateUserDto) {
@@ -53,5 +76,18 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  updateUserToken = async (refreshToken: string, _id: string) => {
+    return await this.userModel.updateOne(
+      { _id },
+      { refreshToken }
+    )
+  }
+
+  findUserByToken = async (refreshToken: string) => {
+    return await this.userModel.findOne(
+      {refreshToken}
+    )
   }
 }

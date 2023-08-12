@@ -13,6 +13,9 @@ export class User {
 
   @Prop()
   fullname: string;
+
+  @Prop()
+  refreshToken: string;
     
   @Prop()
   createdAt: Date;

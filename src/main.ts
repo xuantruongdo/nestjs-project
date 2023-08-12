@@ -5,6 +5,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { join } from 'path';
+import cookieParser from 'cookie-parser';
+import { TransformInterceptor } from './core/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,6 +20,19 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
   }));
+
+  app.useGlobalInterceptors(new TransformInterceptor(reflector));
+
+  //Config cookies
+  app.use(cookieParser());
+
+  //Config CORS 
+  app.enableCors({
+    "origin": true,
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+    "preflightContinue": false,
+    credentials: true
+  });
 
   //Config versioning
   app.setGlobalPrefix('api');

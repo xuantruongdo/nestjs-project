@@ -2,7 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { User } from 'src/decorator/customize';
+import { IUser } from './users.interface';
 
 @Controller('users')
 export class UsersController {
@@ -14,8 +15,8 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@User() user : IUser) {
+    return this.usersService.findAll(user);
   }
 
   @Get(':id')
