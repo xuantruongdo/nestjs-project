@@ -7,11 +7,13 @@ import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { compareSync, genSaltSync, hashSync } from 'bcryptjs';
 import { User } from 'src/decorator/customize';
 import { IUser } from './users.interface';
+import { Role, RoleDocument } from 'src/roles/schemas/role.schema';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(UserM.name) private userModel: SoftDeleteModel<UserDocument>
+    @InjectModel(UserM.name) private userModel: SoftDeleteModel<UserDocument>,
+    @InjectModel(Role.name) private roleModel: SoftDeleteModel<RoleDocument>
   ) { }
 
   getHashPassword = (password: string) => {
@@ -19,16 +21,27 @@ export class UsersService {
     const hash = hashSync(password, salt);
     return hash;
   }
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, user: IUser) {
+    const { email, password, fullname, age, gender, address, role, company } = createUserDto;
+    
+    const isExist = await this.userModel.findOne({ email });
+
+    if (isExist) {
+      throw new BadRequestException("Email đã tồn tại")
+    }
+
     const hashPassword = this.getHashPassword(createUserDto.password);
 
-    let user = await this.userModel.create({
-      email: createUserDto.email,
+    let newUser = await this.userModel.create({
+      email, fullname, age, gender, address, role, company,
       password: hashPassword,
-      fullname: createUserDto.fullname
+      createdBy: {
+        _id: user._id,
+        email: user.email
+      }
     })
 
-    return user;
+    return newUser;
   }
 
   findAll(user: IUser) {
@@ -48,7 +61,7 @@ export class UsersService {
   }
 
   async register (user: RegisterUserDto) {
-    const { email, password, fullname } = user;
+    const { email, password, fullname, age, gender, address } = user;
 
     const isExist = await this.userModel.findOne({ email })
     
@@ -56,13 +69,12 @@ export class UsersService {
       throw new BadRequestException("Email đã tồn tại")
     }
 
-
+    const userRole = await this.roleModel.findOne({ name: ""})
     const hashPassword = this.getHashPassword(password);
 
     let newRegister = await this.userModel.create({
-      email,
-      password: hashPassword,
-      fullname
+      email, fullname, age, gender, address,
+      password: hashPassword
     })
 
     return newRegister;

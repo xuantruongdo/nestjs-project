@@ -19,7 +19,8 @@ export class AuthController {
         return this.authService.login(req.user, response);
     }
 
-    @Public()
+  @Public()
+      @ResponseMessage("User register")
     @Post("/register")
     handleRegister(@Body() registerUserDto: RegisterUserDto) {
         return this.authService.register(registerUserDto);
@@ -31,6 +32,7 @@ export class AuthController {
   }
   
   @Public()
+  @ResponseMessage("Refresh token")
   @Get('/refresh')
   async handleRefreshToken(@Req() request: RequestType, @Res({ passthrough: true }) response: Response) {
 

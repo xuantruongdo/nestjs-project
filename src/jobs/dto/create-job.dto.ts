@@ -1,6 +1,5 @@
 import { Transform, Type } from "class-transformer";
 import { IsArray, IsBoolean, IsDate, IsDefined, IsNotEmpty, IsNotEmptyObject, IsObject, IsString, ValidateNested } from "class-validator";
-import mongoose from "mongoose";
 
 
 class Company {
