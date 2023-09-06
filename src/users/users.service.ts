@@ -8,6 +8,8 @@ import { compareSync, genSaltSync, hashSync } from 'bcryptjs';
 import { User } from 'src/decorator/customize';
 import { IUser } from './users.interface';
 import { Role, RoleDocument } from 'src/roles/schemas/role.schema';
+import { USER_ROLE } from 'src/databases/sample';
+import aqp from 'api-query-params';
 
 @Injectable()
 export class UsersService {
@@ -44,12 +46,38 @@ export class UsersService {
     return newUser;
   }
 
-  findAll(user: IUser) {
-    return `This action returns all users`;
+  async findAll(currentPage: number, limit: number, qs: string) {
+    const { filter, sort, projection, population } = aqp(qs);
+    delete filter.current;
+    delete filter.pageSize;
+
+    let offset = (+currentPage - 1) * (+limit);
+    let defaultLimit = +limit ? +limit : 10;
+    const totalItems = (await this.roleModel.find(filter)).length;
+    const totalPages = Math.ceil(totalItems / defaultLimit);
+
+    const result = await this.userModel.find(filter)
+    .skip(offset)
+    .limit(defaultLimit)
+    .sort(sort as any)
+    .populate(population)
+    .exec();
+    
+    return {
+      meta: {
+        current: currentPage,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems
+      },
+      result
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    return await this.roleModel.findOne({
+      _id: id
+    }).populate({ path: "permissions", select: { _id: 1, name: 1, apiPath: 1, method: 1, module: 1 } })
   }
 
   findOneByEmail(email: string) {
@@ -69,12 +97,13 @@ export class UsersService {
       throw new BadRequestException("Email đã tồn tại")
     }
 
-    const userRole = await this.roleModel.findOne({ name: ""})
+    const userRole = await this.roleModel.findOne({ name: USER_ROLE})
     const hashPassword = this.getHashPassword(password);
 
     let newRegister = await this.userModel.create({
       email, fullname, age, gender, address,
-      password: hashPassword
+      password: hashPassword,
+      role: userRole
     })
 
     return newRegister;

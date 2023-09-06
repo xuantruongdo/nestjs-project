@@ -19,8 +19,8 @@ export class AuthController {
         return this.authService.login(req.user, response);
     }
 
-  @Public()
-      @ResponseMessage("User register")
+    @Public()
+    @ResponseMessage("User register")
     @Post("/register")
     handleRegister(@Body() registerUserDto: RegisterUserDto) {
         return this.authService.register(registerUserDto);
@@ -28,20 +28,21 @@ export class AuthController {
 
     @Get('/account')
     async handleGetAccount(@User() user: IUser) {
-      return user;
+      
+      return this.authService.fetchCurrentAccount(user);
   }
   
-  @Public()
-  @ResponseMessage("Refresh token")
-  @Get('/refresh')
-  async handleRefreshToken(@Req() request: RequestType, @Res({ passthrough: true }) response: Response) {
+    @Public()
+    @ResponseMessage("Refresh token")
+    @Get('/refresh')
+    async handleRefreshToken(@Req() request: RequestType, @Res({ passthrough: true }) response: Response) {
 
-    const refresh_token = request.cookies["refresh_token"]
-    return this.authService.processNewToken(refresh_token, response);
-  }
+      const refresh_token = request.cookies["refresh_token"]
+      return this.authService.processNewToken(refresh_token, response);
+    }
 
-  @Post('/logout')
-  handleLogout(@Res({ passthrough: true }) response: Response, @User() user: IUser) {
-    return this.authService.logout(response, user);
-  }
+    @Post('/logout')
+    handleLogout(@Res({ passthrough: true }) response: Response, @User() user: IUser) {
+      return this.authService.logout(response, user);
+    }
 }

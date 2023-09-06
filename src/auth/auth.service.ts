@@ -42,24 +42,26 @@ export class AuthService {
 
     async login(user: IUser, response: Response) {
         const { _id, email, fullname, role, permissions } = user;
+        const temp = await this.rolesService.findOne(role);
         const payload = {
             sub: "token login",
             iss: "from server",
-            _id, email, fullname, role
-        }
-
+            _id, email, fullname, role // Include _id and name in the role field
+        };
+    
         const refresh_token = this.createRefreshToken(payload);
-
+    
         await this.usersService.updateUserToken(refresh_token, _id);
-
-        //Set refreshToken as cookie
+    
+        // Set refreshToken as cookie
         response.cookie('refresh_token', refresh_token, {
             httpOnly: true,
             maxAge: ms(this.configService.get<string>("JWT_REFRESH_EXPIRE"))
-        })
+        });
+        
         return {
             access_token: this.jwtService.sign(payload),
-            user: {_id, email, fullname, role, permissions}
+            user: { _id, email, fullname, role: { _id: temp._id, name: temp.name }, permissions } // Include _id and name in the role field of the user object
         };
     }
 
@@ -129,5 +131,19 @@ export class AuthService {
         await this.usersService.updateUserToken("", user._id);
         response.clearCookie("refresh_token");
         return "ok";
+    }
+
+    fetchCurrentAccount = async (user: IUser) => {
+        const { _id, email, fullname, role, permissions } = user;
+        const userRole = await this.rolesService.findOne((role));
+        const currentUser = {
+            _id, email, fullname,
+            role: {
+                _id: userRole._id,
+                name: userRole.name
+            },
+            permissions
+        }
+        return currentUser;
     }
 }

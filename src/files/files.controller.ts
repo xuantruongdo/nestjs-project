@@ -17,7 +17,7 @@ export class FilesController {
       file: file.filename
     }
   }
-
+ 
   @Get()
   findAll() {
     return this.filesService.findAll();
