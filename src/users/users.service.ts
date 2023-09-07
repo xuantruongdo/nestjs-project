@@ -60,7 +60,7 @@ export class UsersService {
     .skip(offset)
     .limit(defaultLimit)
     .sort(sort as any)
-    .populate(population)
+    .populate({path: 'role', select: {_id: 1, name: 1 }})
     .exec();
     
     return {
