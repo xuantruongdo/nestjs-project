@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
+import { ChangePasswordDto, CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserDocument, User as UserM } from './schemas/user.schema';
@@ -23,6 +23,7 @@ export class UsersService {
     const hash = hashSync(password, salt);
     return hash;
   }
+
   async create(createUserDto: CreateUserDto, user: IUser) {
     const { email, password, fullname, age, gender, address, role, company } = createUserDto;
     
@@ -109,11 +110,41 @@ export class UsersService {
     return newRegister;
   }
 
-
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(_id: string, updateUserDto: UpdateUserDto, user: IUser) {
+    let updated = await this.userModel.updateOne({ _id }, {
+      ...updateUserDto,
+      updatedBy: {
+        _id: user._id,
+        email: user.email
+      }
+    })
+    let userUpdated = (await this.userModel.findOne({ _id })
+    .populate({ path: "role", select: { _id: 1, name: 1 } })
+    .select('_id email fullname age gender address role'))
+    return {
+      updated,
+      userUpdated
+    };
   }
+
+  async changePassword(_id: string, changPasswordDto: ChangePasswordDto, user: IUser) {
+    const { current_password, new_password, confirm_password } = changPasswordDto;
+    if (new_password !== confirm_password) {
+      throw new BadRequestException('Xác nhận mật khẩu không khớp.');
+    }
+    let userCurrent = await this.userModel.findOne({ _id });
+    let isValid = this.isValidPassword(current_password, userCurrent.password);
+    if (isValid) {
+      const hashPassword = this.getHashPassword(new_password);
+      let updated = await this.userModel.updateOne({ _id }, {
+        password: hashPassword
+      })
+      return updated;
+    } else {
+      throw new BadRequestException('Mật khẩu không chính xác.');
+    }
+  }
+
 
   remove(id: number) {
     return `This action removes a #${id} user`;

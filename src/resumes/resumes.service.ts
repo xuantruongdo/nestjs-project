@@ -99,4 +99,11 @@ export class ResumesService {
     })
     return this.resumeModel.softDelete({_id});
   }
+
+  async findResumesByUserId(userId: string) {
+    return await this.resumeModel.find({ userId }).populate([
+      { path: "companyId", select: { _id: 1, name: 1 } },
+      { path: "jobId", select: { _id: 1, name: 1 } }
+    ]);
+  }
 }

@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { ChangePasswordDto, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public, ResponseMessage, User } from 'src/decorator/customize';
 import { IUser } from './users.interface';
+import { RolesService } from 'src/roles/roles.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService,
+    private rolesService: RolesService) { }
 
   @Post()
   @ResponseMessage("Create a new user")
@@ -26,16 +28,30 @@ export class UsersController {
     return this.usersService.findAll(+currentPage, +limit, qs);
   }
 
-  @Public()
   @Get(':id')
   @ResponseMessage("Get user by id")
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
+  @Patch('change-password/:id')
+  @ResponseMessage("Change password")
+  async changePassword(@Param('id') id: string, @Body() changPasswordDto: ChangePasswordDto,  @User() user: IUser) {
+    const role = await this.rolesService.findOne(user.role);
+    if (id !== user._id && role.name !== "SUPER_ADMIN") {
+      throw new NotFoundException('Tài khoản không tồn tại hoặc bạn không có quyền sửa tài khoản này.');
+    }
+    return this.usersService.changePassword(id, changPasswordDto, user);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @ResponseMessage("update user")
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @User() user: IUser) {
+    const role = await this.rolesService.findOne(user.role);
+    if (id !== user._id && role.name !== "SUPER_ADMIN") {
+      throw new NotFoundException('Tài khoản không tồn tại hoặc bạn không có quyền sửa tài khoản này.');
+    }
+    return this.usersService.update(id, updateUserDto, user);
   }
 
   @Delete(':id')

@@ -26,10 +26,16 @@ export class ResumesController {
     return this.resumesService.findAll(+currentPage, +limit, qs);
   }
 
+  @ResponseMessage("Fetch resumes by userId")
+  @Get('userId')
+  findResumesByUserId(@User() user: IUser) {
+    return this.resumesService.findResumesByUserId(user._id);
+  }
+
   @ResponseMessage("Fetch resume by id")
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.resumesService.findOne(id); 
+    return this.resumesService.findOne(id);
   }
 
   @ResponseMessage("Update status resume")

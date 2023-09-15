@@ -26,6 +26,12 @@ export class SubscribersController {
     return this.subscribersService.findAll(+currentPage, +limit, qs);
   }
 
+  @Get('skills')
+  @ResponseMessage("Get skills subscriber")
+  getSkills(@User() user: IUser) {
+    return this.subscribersService.getSkills(user);
+  }
+
   @Public()
   @Get(':id')
   @ResponseMessage("Get subscriber by id")
@@ -33,11 +39,11 @@ export class SubscribersController {
     return this.subscribersService.findOne(id);
   }
 
-  @Patch()
+  @Patch('skills')
   @SkipCheckPermission()
-  @ResponseMessage("Update subscriber")
-  update(@Param('id') id: string, @Body() updateSubscriberDto: UpdateSubscriberDto, @User() user: IUser) {
-    return this.subscribersService.update(id, updateSubscriberDto, user);
+  @ResponseMessage("Update skills subscriber")
+  update(@Body() updateSubscriberDto: UpdateSubscriberDto, @User() user: IUser) {
+    return this.subscribersService.update(updateSubscriberDto, user);
   }
 
   @Delete(':id')

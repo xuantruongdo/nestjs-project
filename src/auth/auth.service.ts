@@ -15,12 +15,11 @@ export class AuthService {
         private usersService: UsersService,
         private jwtService: JwtService,
         private configService: ConfigService,
-        private rolesService: RolesService
+        private rolesService: RolesService,
     ) { }
     
     async validateUser(email: string, pass: string): Promise<any> {
         const user = await this.usersService.findOneByEmail(email);
-
         if (user) {
             const isValid = this.usersService.isValidPassword(pass, user.password);
             if (isValid) {
@@ -41,12 +40,12 @@ export class AuthService {
     }
 
     async login(user: IUser, response: Response) {
-        const { _id, email, fullname, role, permissions } = user;
+        const { _id, email, fullname, age, gender, address, role, permissions } = user;
         const temp = await this.rolesService.findOne(role);
         const payload = {
             sub: "token login",
             iss: "from server",
-            _id, email, fullname, role // Include _id and name in the role field
+            _id, email, role // Include _id and name in the role field
         };
     
         const refresh_token = this.createRefreshToken(payload);
@@ -61,7 +60,7 @@ export class AuthService {
         
         return {
             access_token: this.jwtService.sign(payload),
-            user: { _id, email, fullname, role: { _id: temp._id, name: temp.name }, permissions } // Include _id and name in the role field of the user object
+            user: { _id, email, fullname, age, gender, address, role: { _id: temp._id, name: temp.name }, permissions } // Include _id and name in the role field of the user object
         };
     }
 
@@ -89,11 +88,11 @@ export class AuthService {
 
             if (user) {
                 //update refresh_token
-                const { _id, email, fullname, role } = user;
+                const { _id, email, fullname, age, gender, address, role } = user;
                 const payload = {
                     sub: "token refresh",
                     iss: "from server",
-                    _id, email, fullname, role
+                    _id, email, role
                 }
 
                 const refresh_token = this.createRefreshToken(payload);
@@ -116,6 +115,9 @@ export class AuthService {
                         _id,
                         fullname,
                         email,
+                        age,
+                        gender,
+                        address,
                         role,
                         permissions: temp?.permissions ?? []
                     }
@@ -134,16 +136,20 @@ export class AuthService {
     }
 
     fetchCurrentAccount = async (user: IUser) => {
-        const { _id, email, fullname, role, permissions } = user;
-        const userRole = await this.rolesService.findOne((role));
-        const currentUser = {
-            _id, email, fullname,
-            role: {
-                _id: userRole._id,
-                name: userRole.name
-            },
-            permissions
-        }
-        return currentUser;
+        const { _id, email, role, permissions } = user;
+        let userByEmail = await this.usersService.findOneByEmail(email)
+        .populate([
+            { path: "role", select: { _id: 1, name: 1 } },
+        ])
+        .select('_id email fullname age gender address role');
+    
+        // Tạo một đối tượng mới chứa thông tin từ userByEmail và thêm permissions
+        let userCurrent = {
+            ...userByEmail.toObject(), // Chuyển userByEmail thành một đối tượng thường để có thể thêm trường permissions
+            permissions: permissions,
+        };
+        
+        return userCurrent;
+    
     }
 }

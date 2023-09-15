@@ -26,9 +26,9 @@ export class AuthController {
         return this.authService.register(registerUserDto);
     }
 
+    @ResponseMessage("Fetch current user")
     @Get('/account')
     async handleGetAccount(@User() user: IUser) {
-      
       return this.authService.fetchCurrentAccount(user);
   }
   

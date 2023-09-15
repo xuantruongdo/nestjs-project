@@ -79,17 +79,36 @@ export class RegisterUserDto {
     fullname: string;
 
     @IsNotEmpty({
-        message: 'Age không được để trống'
+        message: 'Tuổi không được để trống'
     })
     age: string;
 
     @IsNotEmpty({
-        message: 'Gender không được để trống'
+        message: 'Giới tính không được để trống'
     })
     gender: string;
 
     @IsNotEmpty({
-        message: 'Address không được để trống'
+        message: 'Địa chỉ không được để trống'
     })
     address: string;
+}
+
+export class ChangePasswordDto {
+
+    @IsNotEmpty({
+        message: 'Mật khẩu hiện tại không được để trống'
+    })
+    current_password: string;
+
+    @IsNotEmpty({
+        message: 'Mật khẩu mới không được để trống'
+    })
+    new_password: string;
+
+    @IsNotEmpty({
+        message: 'Xác nhận mật khẩu không được để trống'
+    })
+    confirm_password: string;
+
 }
