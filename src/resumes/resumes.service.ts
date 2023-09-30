@@ -52,7 +52,11 @@ export class ResumesService {
     .skip(offset)
     .limit(defaultLimit)
     .sort(sort as any)
-    .populate(population)
+      .populate([
+        { path: "userId", select: { _id: 1, email: 1 } },
+        { path: "jobId", select: { _id: 1, name: 1 } },
+        { path: "companyId", select: { _id: 1, name: 1, logo: 1 } }
+    ])
     .exec();
     
     return {
@@ -105,5 +109,10 @@ export class ResumesService {
       { path: "companyId", select: { _id: 1, name: 1 } },
       { path: "jobId", select: { _id: 1, name: 1 } }
     ]);
+  }
+
+  async getCount() {
+    const count = await this.resumeModel.countDocuments({ isDeleted: false });
+    return count;
   }
 }

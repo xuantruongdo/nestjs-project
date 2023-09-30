@@ -27,6 +27,13 @@ export class JobsController {
   }
 
   @Public()
+  @ResponseMessage("Get count job")
+  @Get('/count')
+  count() {
+    return this.jobsService.getCount();
+  }
+
+  @Public()
   @ResponseMessage("Fetch job by id")
   @Get(':id')
   findOne(@Param('id') id: string) {

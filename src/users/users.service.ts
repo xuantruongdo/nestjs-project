@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ChangePasswordDto, CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserByAdminDto, UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserDocument, User as UserM } from './schemas/user.schema';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
@@ -33,7 +33,7 @@ export class UsersService {
       throw new BadRequestException("Email đã tồn tại")
     }
 
-    const hashPassword = this.getHashPassword(createUserDto.password);
+    const hashPassword = this.getHashPassword(password);
 
     let newUser = await this.userModel.create({
       email, fullname, age, gender, address, role, company,
@@ -54,7 +54,7 @@ export class UsersService {
 
     let offset = (+currentPage - 1) * (+limit);
     let defaultLimit = +limit ? +limit : 10;
-    const totalItems = (await this.roleModel.find(filter)).length;
+    const totalItems = (await this.userModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
     const result = await this.userModel.find(filter)
@@ -76,7 +76,7 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    return await this.roleModel.findOne({
+    return await this.userModel.findOne({
       _id: id
     }).populate({ path: "permissions", select: { _id: 1, name: 1, apiPath: 1, method: 1, module: 1 } })
   }
@@ -127,6 +127,23 @@ export class UsersService {
     };
   }
 
+  async updateByAdmin(_id: string, updateUserByAdminDto: UpdateUserByAdminDto, user: IUser) {
+    let updated = await this.userModel.updateOne({ _id }, {
+      ...updateUserByAdminDto,
+      updatedBy: {
+        _id: user._id,
+        email: user.email
+      }
+    })
+    let userUpdated = (await this.userModel.findOne({ _id })
+    .populate({ path: "role", select: { _id: 1, name: 1 } })
+    .select('_id email fullname age gender address role'))
+    return {
+      updated,
+      userUpdated
+    };
+  }
+
   async changePassword(_id: string, changPasswordDto: ChangePasswordDto, user: IUser) {
     const { current_password, new_password, confirm_password } = changPasswordDto;
     if (new_password !== confirm_password) {
@@ -146,8 +163,22 @@ export class UsersService {
   }
 
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string, user: IUser) {
+
+    const removedUser = await this.userModel.findById(id).populate({ path: "role", select: { _id: 1, name: 1 } })
+    const userRole = removedUser.role as unknown as { _id: string, name: string };
+
+    if (userRole.name === "SUPER_ADMIN") {
+      throw new BadRequestException("Không thể xóa role ADMIN");
+    }
+    
+    await this.userModel.updateOne({ _id: id }, {
+      deletedBy: {
+        _id: user._id,
+        email: user.email 
+      }
+    })
+    return this.userModel.softDelete({_id: id});
   }
 
   updateUserToken = async (refreshToken: string, _id: string) => {
@@ -161,5 +192,10 @@ export class UsersService {
     return await this.userModel.findOne(
       {refreshToken}
     )
+  }
+
+  async getCount() {
+    const count = await this.userModel.countDocuments({ isDeleted: false });
+    return count;
   }
 }

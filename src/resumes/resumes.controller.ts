@@ -32,6 +32,13 @@ export class ResumesController {
     return this.resumesService.findResumesByUserId(user._id);
   }
 
+  @Public()
+  @ResponseMessage("Get count resume")
+  @Get('/count')
+  count() {
+    return this.resumesService.getCount();
+  }
+
   @ResponseMessage("Fetch resume by id")
   @Get(':id')
   findOne(@Param('id') id: string) {

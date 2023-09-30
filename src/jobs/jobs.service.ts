@@ -79,4 +79,9 @@ export class JobsService {
 
     return this.jobModel.softDelete({ _id });
   }
+
+  async getCount() {
+    const count = await this.jobModel.countDocuments({ isDeleted: false });
+    return count;
+  }
 }
